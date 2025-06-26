@@ -61,10 +61,31 @@ class DockerSetup
 
     private function createInitFiles()
     {
+        // Create WordPress index.php file (Bedrock's main entry point)
+        $indexPhp = "web/index.php";
+        if (!file_exists($indexPhp)) {
+            $content = "<?php\n\n";
+            $content .= "/**\n";
+            $content .= " * WordPress view bootstrapper\n";
+            $content .= " */\n";
+            $content .= "define('WP_USE_THEMES', true);\n";
+            $content .= "require __DIR__ . '/wp/wp-blog-header.php';\n";
+            file_put_contents($indexPhp, $content);
+            echo "📝 Created {$indexPhp}\n";
+        }
+
         // Create .htaccess for web directory
         $htaccess = "web/.htaccess";
         if (!file_exists($htaccess)) {
-            $content = "# WordPress SEO by Yoast\n# This file is managed by Docker setup\nOptions -Indexes\n";
+            $content = "# BEGIN WordPress\n";
+            $content .= "RewriteEngine On\n";
+            $content .= "RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\n";
+            $content .= "RewriteBase /\n";
+            $content .= "RewriteRule ^index\.php$ - [L]\n";
+            $content .= "RewriteCond %{REQUEST_FILENAME} !-f\n";
+            $content .= "RewriteCond %{REQUEST_FILENAME} !-d\n";
+            $content .= "RewriteRule . /index.php [L]\n";
+            $content .= "# END WordPress\n";
             file_put_contents($htaccess, $content);
             echo "📝 Created {$htaccess}\n";
         }
@@ -106,7 +127,7 @@ class DockerSetup
 
         echo "Next steps:\n\n";
         echo "1. Start the environment:\n";
-        echo "   composer docker-up\n\n";
+       echo "   composer docker-up\n\n";
         echo "2. Visit your WordPress site:\n";
         echo "   {$home}\n\n";
         echo "3. Access development tools:\n";
@@ -127,6 +148,6 @@ class DockerSetup
 
 // Only run if called directly
 if (basename(__FILE__) == basename($_SERVER['SCRIPT_NAME'])) {
-   $setup = new DockerSetup();
+    $setup = new DockerSetup();
     $setup->run();
 }
