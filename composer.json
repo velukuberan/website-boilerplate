@@ -1,0 +1,90 @@
+{
+    "name": "accerso/website-boilerplate",
+    "description": "Accerso WordPress development boilerplate with Bedrock and Docker - WP 6.5 + PHP 8.2",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Velmurugan K",
+            "email": "vkuberan@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "roots/bedrock": "^1.26",
+        "johnpbloch/wordpress": "~6.5.0",
+        "roots/wp-password-bcrypt": "^1.0",
+        "wpackagist-plugin/akismet": "^5.0",
+        "wpackagist-theme/twentytwentyfour": "^1.0"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.7",
+        "roave/security-advisories": "dev-latest"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://wpackagist.org"
+        }
+    ],
+    "extra": {
+        "installer-paths": {
+            "web/app/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
+            "web/app/plugins/{$name}/": ["type:wordpress-plugin"],
+            "web/app/themes/{$name}/": ["type:wordpress-theme"]
+        },
+        "wordpress-install-dir": "web/wp"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@setup-env",
+            "@setup-permissions",
+            "@generate-salts",
+            "@docker-setup"
+        ],
+        "post-update-cmd": [
+            "@setup-permissions"
+        ],
+        "setup-env": [
+            "php -r \"if (!file_exists('.env')) { copy('.env.example', '.env'); echo 'Environment file created from .env.example\\n'; }\""
+        ],
+        "setup-permissions": [
+            "php -r \"if (is_dir('web')) { chmod('web', 0755); echo 'Permissions set for web directory\\n'; }\""
+        ],
+        "generate-salts": [
+            "php scripts/generate-salts.php"
+        ],
+        "docker-setup": [
+            "php scripts/docker-setup.php"
+        ],
+        "docker-up": [
+            "docker-compose up -d"
+        ],
+        "docker-down": [
+            "docker-compose down"
+        ],
+        "docker-build": [
+            "docker-compose build --no-cache"
+        ],
+        "logs": [
+            "docker-compose logs -f"
+        ],
+        "shell": [
+            "docker-compose exec web bash"
+        ],
+        "wp": [
+            "docker-compose exec web wp"
+        ],
+        "check-versions": [
+            "php scripts/check-versions.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "composer/installers": true,
+            "roots/wordpress-core-installer": true
+        }
+    }
+}

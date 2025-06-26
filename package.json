@@ -1,0 +1,28 @@
+{
+  "name": "wordpress-bedrock-boilerplate",
+  "version": "4.0.0",
+  "description": "WordPress development boilerplate with Bedrock, Docker, MariaDB, WP 6.5, and PHP 8.2",
+  "scripts": {
+    "dev": "echo 'Add your frontend build tools here (Webpack, Vite, etc.)'",
+    "build": "echo 'Add your production build script here'",
+    "watch": "echo 'Add your watch script here'",
+    "lint": "echo 'Add your linting script here'"
+  },
+  "keywords": [
+    "wordpress",
+    "bedrock",
+    "docker",
+    "php",
+    "mariadb",
+    "development"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@wordpress/scripts": "^26.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

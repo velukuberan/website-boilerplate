@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html:cached
+      - ./docker/nginx/nginx.conf:/etc/nginx/sites-available/default
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - WP_ENV=${WP_ENV}
+      - WP_HOME=${WP_HOME}
+      - WP_SITEURL=${WP_SITEURL}
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - wp-network
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:11.4
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./docker/mariadb/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mariadb/init:/docker-entrypoint-initdb.d
+    networks:
+      - wp-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - wp-network
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "${PHPMYADMIN_PORT:-8081}:80"
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      - mariadb
+    networks:
+      - wp-network
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "${MAILHOG_PORT:-8025}:8025"
+      - "1025:1025"
+    networks:
+      - wp-network
+    restart: unless-stopped
+
+  composer:
+    image: composer:2
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - wp-network
+    profiles:
+      - tools
+
+volumes:
+  mariadb_data:
+    name: ${MYSQL_VOLUME:-mariadb_data}
+  redis_data:
+
+networks:
+  wp-network:
+    driver: bridge
