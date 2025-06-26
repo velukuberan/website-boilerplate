@@ -50,9 +50,11 @@ RUN pecl install redis \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Install WP-CLI
-RUN curl -O https://raw.githubusercontent.com/wp-cli/wp-cli/v2.10.0/wp-cli.phar \
-	&& chmod +x wp-cli.phar \
-	&& mv wp-cli.phar /usr/local/bin/wp
+RUN curl -L -o /usr/local/bin/wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.8.1/wp-cli-2.8.1.phar \
+    && chmod +x /usr/local/bin/wp-cli.phar \
+    && echo '#!/bin/bash' > /usr/local/bin/wp \
+    && echo 'php /usr/local/bin/wp-cli.phar --allow-root "$@"' >> /usr/local/bin/wp \
+    && chmod +x /usr/local/bin/wp
 
 # Create necessary directories
 RUN mkdir -p /var/log/supervisor \

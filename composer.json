@@ -75,6 +75,10 @@
         "wp": [
             "docker-compose exec web wp"
         ],
+		"wp-install": [
+			"docker-compose up -d",
+			"docker-compose exec web php scripts/wp-install.php"
+		],
         "check-versions": [
             "php scripts/check-versions.php"
         ]
