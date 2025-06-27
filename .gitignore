@@ -4,6 +4,7 @@ web/
 # Environment
 .env
 .env.backup.*
+.env.corrupted.*
 
 # Composer
 vendor/

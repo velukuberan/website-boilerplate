@@ -6,8 +6,6 @@ if [[ ! -x "$0" ]] && [[ "$OSTYPE" != "msys" ]] && [[ "$OSTYPE" != "cygwin" ]] &
 fi
 
 # Generate WordPress salts and update .env file
-# Part of WordPress Bedrock + MariaDB + Docker boilerplate
-
 set -e  # Exit on any error
 
 # Colors for output
@@ -15,7 +13,6 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
@@ -57,36 +54,28 @@ generate_salt() {
     local length=${1:-$SALT_LENGTH}
     local salt=""
     
-    # Character set for salts (WordPress compatible)
-    local chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?'
+    # Character set for salts (WordPress compatible, but avoiding problematic chars for shell)
+    local chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%^&*()_+-=[]{}:,.<>?'
     local chars_len=${#chars}
     
-    # Try different methods for generating random bytes
+    # Use OpenSSL if available (most secure)
     if command -v openssl >/dev/null 2>&1; then
-        # Method 1: Use OpenSSL (most secure)
         for ((i=0; i<length; i++)); do
-            # Get a random byte and map it to our character set
             local random_byte=$(openssl rand -hex 1)
             local random_int=$((0x$random_byte))
             local char_index=$((random_int % chars_len))
             salt+="${chars:$char_index:1}"
         done
     elif [[ -r /dev/urandom ]]; then
-        # Method 2: Use /dev/urandom (good security)
+        # Use /dev/urandom
         for ((i=0; i<length; i++)); do
             local random_byte=$(od -An -N1 -tu1 < /dev/urandom | tr -d ' ')
             local char_index=$((random_byte % chars_len))
             salt+="${chars:$char_index:1}"
         done
-    elif command -v shuf >/dev/null 2>&1; then
-        # Method 3: Use shuf (fair security)
-        for ((i=0; i<length; i++)); do
-            local char_index=$(shuf -i 0-$((chars_len-1)) -n 1)
-            salt+="${chars:$char_index:1}"
-        done
     else
-        # Method 4: Fallback using $RANDOM (least secure, but works everywhere)
-        print_info "⚠️  Using fallback random generation (less secure)"
+        # Fallback using $RANDOM
+        print_info "⚠️  Using fallback random generation"
         for ((i=0; i<length; i++)); do
             local char_index=$((RANDOM % chars_len))
             salt+="${chars:$char_index:1}"
@@ -99,36 +88,52 @@ generate_salt() {
 # Check if a salt key needs to be generated
 needs_generation() {
     local key="$1"
-    local env_content="$2"
     
-    # Check if key is empty, has empty quotes, or has placeholder values
-    if grep -q "^${key}=''$" <<< "$env_content" || \
-       grep -q "^${key}=$" <<< "$env_content" || \
-       grep -q "^${key}='generateme'$" <<< "$env_content" || \
-       grep -q "^${key}=\"\"$" <<< "$env_content"; then
-        return 0  # true - needs generation
-    else
-        # Also check if the value is very short (likely placeholder)
-        local current_value=$(grep "^${key}=" <<< "$env_content" | cut -d'=' -f2- | sed "s/^'//" | sed "s/'$//" | sed 's/^"//' | sed 's/"$//')
-        if [[ ${#current_value} -lt 32 ]]; then
-            return 0  # true - needs generation (too short)
-        else
-            return 1  # false - already has a good value
-        fi
+    # Check if line exists and get its value
+    local line=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null || echo "")
+    
+    if [[ -z "$line" ]]; then
+        return 0  # Key doesn't exist, needs generation
     fi
+    
+    # Extract value (everything after first =)
+    local value=$(echo "$line" | cut -d'=' -f2- | sed "s/^['\"]//; s/['\"]$//")
+    
+    # Check if empty or placeholder
+    if [[ -z "$value" ]] || [[ "$value" == "generateme" ]] || [[ ${#value} -lt 32 ]]; then
+        return 0  # Needs generation
+    fi
+    
+    return 1  # Has good value
 }
 
-# Update salt in .env content
-update_salt_in_content() {
+# Update salt in .env file using a more robust method
+update_env_salt() {
     local key="$1"
     local salt="$2"
-    local content="$3"
+    local temp_file=$(mktemp)
     
-    # Escape special characters for sed
-    local escaped_salt=$(printf '%s\n' "$salt" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    # Read the .env file line by line and update the specific key
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^${key}= ]]; then
+            # Replace this line with new salt
+            echo "${key}='${salt}'" >> "$temp_file"
+        else
+            # Keep other lines as-is
+            echo "$line" >> "$temp_file"
+        fi
+    done < "$ENV_FILE"
     
-    # Replace the line with the new salt
-    echo "$content" | sed "s/^${key}=.*$/${key}='${escaped_salt}'/"
+    # Move temp file to replace original
+    mv "$temp_file" "$ENV_FILE"
+}
+
+# Add salt if it doesn't exist in .env
+add_env_salt() {
+    local key="$1"
+    local salt="$2"
+    
+    echo "${key}='${salt}'" >> "$ENV_FILE"
 }
 
 # Main salt generation function
@@ -137,35 +142,36 @@ generate_wordpress_salts() {
     
     # Check if .env file exists
     if [[ ! -f "$ENV_FILE" ]]; then
-        print_eror "❌ .env file not found. Please run 'composer install' first."
+        print_error "❌ .env file not found. Please run 'composer install' first."
         exit 1
     fi
     
-    # Read current .env content
-    local env_content=$(cat "$ENV_FILE")
-    local needs_update=false
-    local updated_content="$env_content"
+    # Create backup
+    cp "$ENV_FILE" "${ENV_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    local updated=false
     
     # Process each salt key
     for key in "${SALT_KEYS[@]}"; do
-        if needs_generation "$key" "$env_content"; then
-            print_info "🔑 Generating $key..."
+        if needs_generation "$key"; then
+            print_info "🔑 Geerating $key..."
             local salt=$(generate_salt)
-            updated_content=$(update_salt_in_content "$key" "$salt" "$updated_content")  # Fixed typo here
-            needs_update=true
+            
+            # Check if key exists in file
+            if grep -q "^${key}=" "$ENV_FILE"; then
+                update_env_salt "$key" "$salt"
+            else
+                add_env_salt "$key" "$salt"
+            fi
+            
+            updated=true
             print_success "✅ Generated $key"
         else
             print_info "ℹ️  $key already configured"
         fi
     done
     
-    # Update .env file if needed
-    if [[ "$needs_update" == "true" ]]; then
-        # Create backup
-        cp "$ENV_FILE" "${ENV_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
-        
-        # Write updated content
-        echo "$updated_content" > "$ENV_FILE"
+    if [[ "$updated" == "true" ]]; then
         print_success "✅ WordPress salts updated in .env file"
         print_info "📄 Backup created: ${ENV_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
     else
@@ -182,10 +188,10 @@ validate_salts() {
     local all_valid=true
     
     for key in "${SALT_KEYS[@]}"; do
-        local salt_line=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null || echo "")
-        if [[ -n "$salt_line" ]]; then
-            # Extract salt value (remove key= and quotes)
-            local salt_value=$(echo "$salt_line" | cut -d'=' -f2- | sed "s/^'//" | sed "s/'$//" | sed 's/^"//' | sed 's/"$//')
+        local line=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null || echo "")
+        if [[ -n "$line" ]]; then
+            # Extract salt value
+            local salt_value=$(echo "$line" | cut -d'=' -f2- | sed "s/^['\"]//; s/['\"]$//")
             
             if [[ ${#salt_value} -ge 32 ]]; then
                 print_success "✅ $key: ${#salt_value} characters"
@@ -219,9 +225,6 @@ force_regenerate() {
         exit 1
     fi
     
-    local env_content=$(cat "$ENV_FILE")
-    local updated_content="$env_content"
-    
     # Create backup
     cp "$ENV_FILE" "${ENV_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
     print_info "📄 Backup created: ${ENV_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
@@ -230,14 +233,17 @@ force_regenerate() {
     for key in "${SALT_KEYS[@]}"; do
         print_info "🔑 Regenerating $key..."
         local salt=$(generate_salt)
-        updated_content=$(update_salt_in_content "$key" "$salt" "$updated_content")
+        
+        if grep -q "^${key}=" "$ENV_FILE"; then
+            update_env_salt "$key" "$salt"
+        else
+            add_env_salt "$key" "$salt"
+        fi
+        
         print_success "✅ Regenerated $key"
     done
     
-    # Write updated content
-    echo "$updated_content" > "$ENV_FILE"
     print_success "🎉 All WordPress salts regenerated!"
-    
     echo ""
 }
 
@@ -252,13 +258,41 @@ show_help() {
     echo "  -f, --force     Force regenerate all salts (even if they exist)"
     echo "  -v, --validate  Validate existing salts"
     echo "  -l, --length N  Set salt length (default: $SALT_LENGTH)"
+    echo "  -r, --repair    Repair corrupted .env file"
     echo ""
     echo "Examples:"
     echo "  $0                    # Generate missing salts"
     echo "  $0 --force            # Regenerate all salts"
     echo "  $0 --validate         # Check existing salts"
-    echo "  $0 --length 128       # Use 128-character salts"
+    echo "  $0 --repair           # Fix corrupted .env"
     echo ""
+}
+
+# Repair corrupted .env file
+repair_env() {
+    print_section "🔧 Repairing corrupted .env file..."
+    
+    if [[ ! -f "$ENV_FILE" ]]; then
+        print_error "❌ .env file not found."
+        exit 1
+    fi
+    
+    # Create backup
+    cp "$ENV_FILE" "${ENV_FILE}.corrupted.$(date +%Y%m%d_%H%M%S)"
+    
+    # Try to restore from .env.example if available
+    if [[ -f ".env.example" ]]; then
+        print_info "🔄 Restoring from .env.example..."
+        cp ".env.example" "$ENV_FILE"
+        print_success "✅ Restored .env from .env.example"
+        
+        # Generate fresh salts
+        force_regenerate
+    else
+        print_error "❌ No .env.example found to restore from"
+        print_info "💡 Please manually fix your .env file or restore from backup"
+        exit 1
+    fi
 }
 
 # Parse command line arguments
@@ -276,6 +310,10 @@ parse_args() {
                 ;;
             -v|--validate)
                 validate_salts
+                exit 0
+                ;;
+            -r|--repair)
+                repair_env
                 exit 0
                 ;;
             -l|--length)
