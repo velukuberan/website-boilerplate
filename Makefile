@@ -12,6 +12,7 @@ help: ## Show this help message
 
 install: ## Install dependencies and setup environment
 	composer install
+	composer setup 
 
 up: ## Start the Docker environment
 	docker-compose up -d

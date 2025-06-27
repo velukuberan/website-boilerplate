@@ -1,7 +1,5 @@
 # WordPress
-web/wp/
-web/app/uploads/
-web/app/upgrade/
+web/
 
 # Environment
 .env

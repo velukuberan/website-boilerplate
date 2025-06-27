@@ -36,26 +36,23 @@
         "wordpress-install-dir": "web/wp"
     },
     "scripts": {
-        "post-install-cmd": [
+        "setup": [
             "@setup-env",
             "@setup-permissions",
             "@generate-salts",
             "@docker-setup"
         ],
-        "post-update-cmd": [
-            "@setup-permissions"
-        ],
         "setup-env": [
-            "php -r \"if (!file_exists('.env')) { copy('.env.example', '.env'); echo 'Environment file created from .env.example\\n'; }\""
+            "./scripts/setup-env.sh"
         ],
         "setup-permissions": [
-            "php -r \"if (is_dir('web')) { chmod('web', 0755); echo 'Permissions set for web directory\\n'; }\""
+            "./scripts/setup-permissions.sh"
         ],
         "generate-salts": [
-            "php scripts/generate-salts.php"
+            "./scripts/generate-salts.sh"
         ],
         "docker-setup": [
-            "php scripts/docker-setup.php"
+            "./scripts/docker-setup.sh"
         ],
         "docker-up": [
             "docker-compose up -d"
@@ -80,7 +77,7 @@
 			"docker-compose exec web php scripts/wp-install.php"
 		],
         "check-versions": [
-            "php scripts/check-versions.php"
+            "./scripts/check-versions.sh"
         ]
     },
     "config": {
