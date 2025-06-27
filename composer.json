@@ -70,7 +70,7 @@
             "docker-compose logs -f"
         ],
         "shell": [
-            "docker-compose exec web bash"
+            "./scripts/shell.sh"
         ],
         "wp": [
             "docker-compose exec web wp"
