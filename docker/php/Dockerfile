@@ -52,7 +52,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Install WP-CLI
 RUN curl -L -o /usr/local/bin/wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.8.1/wp-cli-2.8.1.phar \
     && chmod +x /usr/local/bin/wp-cli.phar \
-    && echo '#!/bin/bash' > /usr/local/bin/wp \
+    && echo '#!/bin/sh' > /usr/local/bin/wp \
     && echo 'php /usr/local/bin/wp-cli.phar --allow-root "$@"' >> /usr/local/bin/wp \
     && chmod +x /usr/local/bin/wp
 
