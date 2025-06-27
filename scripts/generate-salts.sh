@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Self-fixing permissions
+if [[ ! -x "$0" ]] && [[ "$OSTYPE" != "msys" ]] && [[ "$OSTYPE" != "cygwin" ]] && [[ -z "$WSL_DISTRO_NAME" ]]; then
+    chmod +x "$0" 2>/dev/null || true
+fi
+
 # Generate WordPress salts and update .env file
 # Part of WordPress Bedrock + MariaDB + Docker boilerplate
 
@@ -103,7 +108,13 @@ needs_generation() {
        grep -q "^${key}=\"\"$" <<< "$env_content"; then
         return 0  # true - needs generation
     else
-        return 1  # false - already has a value
+        # Also check if the value is very short (likely placeholder)
+        local current_value=$(grep "^${key}=" <<< "$env_content" | cut -d'=' -f2- | sed "s/^'//" | sed "s/'$//" | sed 's/^"//' | sed 's/"$//')
+        if [[ ${#current_value} -lt 32 ]]; then
+            return 0  # true - needs generation (too short)
+        else
+            return 1  # false - already has a good value
+        fi
     fi
 }
 
@@ -126,7 +137,7 @@ generate_wordpress_salts() {
     
     # Check if .env file exists
     if [[ ! -f "$ENV_FILE" ]]; then
-        print_error "❌ .env file not found. Please run 'composer install' first."
+        print_eror "❌ .env file not found. Please run 'composer install' first."
         exit 1
     fi
     
@@ -140,7 +151,7 @@ generate_wordpress_salts() {
         if needs_generation "$key" "$env_content"; then
             print_info "🔑 Generating $key..."
             local salt=$(generate_salt)
-            updated_content=$(update_salt_in_content "$key" "$salt" "$updated_conten")
+            updated_content=$(update_salt_in_content "$key" "$salt" "$updated_content")  # Fixed typo here
             needs_update=true
             print_success "✅ Generated $key"
         else
@@ -171,10 +182,10 @@ validate_salts() {
     local all_valid=true
     
     for key in "${SALT_KEYS[@]}"; do
-        local salt_line=$(grep "^${key}=" "$ENV_FILE" || true)
+        local salt_line=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null || echo "")
         if [[ -n "$salt_line" ]]; then
             # Extract salt value (remove key= and quotes)
-            local salt_value=$(echo "$salt_line" | sed "s/^${key}=//" | sed "s/^'//" | sed "s/'$//" | sed 's/^"//' | sed 's/"$//')
+            local salt_value=$(echo "$salt_line" | cut -d'=' -f2- | sed "s/^'//" | sed "s/'$//" | sed 's/^"//' | sed 's/"$//')
             
             if [[ ${#salt_value} -ge 32 ]]; then
                 print_success "✅ $key: ${#salt_value} characters"
@@ -183,7 +194,7 @@ validate_salts() {
                 all_valid=false
             fi
         else
-            print_error "❌ $key: Not found"
+            print_error "❌ $key: Not found in .env file"
             all_valid=false
         fi
     done
@@ -192,6 +203,7 @@ validate_salts() {
         print_success "🎉 All salts are valid!"
     else
         print_error "⚠️  Some salts may need regeneration"
+        print_info "💡 Try: ./scripts/generate-salts.sh --force"
         exit 1
     fi
     

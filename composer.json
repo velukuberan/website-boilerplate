@@ -36,7 +36,13 @@
         "wordpress-install-dir": "web/wp"
     },
     "scripts": {
-        "setup": [
+        "post-autoload-dump": [
+            "@make-scripts-executable"
+        ],
+        "make-scripts-executable": [
+            "php ./scripts/make-executable.php"
+        ],
+		"setup": [
             "@setup-env",
             "@setup-permissions",
             "@generate-salts",
