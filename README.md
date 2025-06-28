@@ -23,6 +23,8 @@ A modern WordPress development environment using **Bedrock**, **Docker**, **Word
 git clone https://github.com/your-username/wordpress-boilerplate.git my-project
 cd my-project
 composer install
+composer setup
+composer docker-build
 ```
 
 That's it! The setup script will automatically:
@@ -168,6 +170,7 @@ composer update
 git clone <your-boilerplate-repo> my-new-project
 cd my-new-project
 composer install
+composer docker-build
 composer docker-up
 ```
 
@@ -226,6 +229,7 @@ composer docker-down && composer docker-up
 ```bash
 composer docker-down
 docker system prune -a --volumes
+composer docker-build
 composer docker-up
 ```
 
