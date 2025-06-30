@@ -2,26 +2,23 @@
 // Auto-generated wp-config.php from template
 
 function custom_env($key, $default = '') {
-    $value = getenv($key);
-    return $value !== false ? $value : $default;
+	$value = getenv($key);
+	return $value !== false ? $value : $default;
 }
-
-global $table_prefix;
-$table_prefix = custom_env('DB_PREFIX', 'wp_');
-    
-// Database settings
-define('DB_NAME', custom_env('DB_NAME', 'wordpress'));
-define('DB_USER', custom_env('DB_USER', 'root'));
-define('DB_PASSWORD', custom_env('DB_PASSWORD'));
-define('DB_HOST', custom_env('DB_HOST', '127.0.0.1'));
 
 // Site URLs
 define('WP_HOME', custom_env('WP_HOME', 'http://localhost:8080'));
-define('WP_SITEURL', custom_env('WP_SITEURL', WP_HOME . '/wp'));
+define('WP_SITEURL', WP_HOME . '/wp');
 
-// Content directory
-define('WP_CONTENT_DIR', dirname(__DIR__) . '/app');
+// Custom content directory
+define('WP_CONTENT_DIR', dirname(__DIR__) . '/web/app');
 define('WP_CONTENT_URL', WP_HOME . '/app');
+
+// Database settings
+define('DB_NAME', custom_env('DB_NAME', 'wordpress'));
+define('DB_USER', custom_env('DB_USER', 'root'));
+define('DB_PASSWORD', custom_env('DB_PASSWORD', ''));
+define('DB_HOST', custom_env('DB_HOST', '127.0.0.1'));
 
 // Salts
 define('AUTH_KEY', custom_env('AUTH_KEY'));
@@ -33,17 +30,18 @@ define('SECURE_AUTH_SALT', custom_env('SECURE_AUTH_SALT'));
 define('LOGGED_IN_SALT', custom_env('LOGGED_IN_SALT'));
 define('NONCE_SALT', custom_env('NONCE_SALT'));
 
-// Debug
-// define('WP_DEBUG', custom_env('WP_ENV', 'development'));
-// define('WP_DEBUG_LOG', custom_env('WP_DEBUG_LOG', '/tmp/wp-errors.log'));
+// Optional extras
+define('WP_DEBUG', custom_env('WP_ENV') === 'development');
+define('WP_DEBUG_LOG', custom_env('WP_DEBUG_LOG', '/tmp/wp-errors.log'));
+define('DISABLE_WP_CRON', custom_env('DISABLE_WP_CRON', 'true') === 'true');
+define('AUTOMATIC_UPDATER_DISABLED', custom_env('AUTOMATIC_UPDATER_DISABLED', 'true') === 'true');
 
-// Cron & updates
-define('DISABLE_WP_CRON', custom_env('DISABLE_WP_CRON', 'true'));
-define('AUTOMATIC_UPDATER_DISABLED', custom_env('AUTOMATIC_UPDATER_DISABLED', 'true'));
+// Table prefix
+$table_prefix = custom_env('DB_PREFIX', 'wp_');
 
 // Absolute path to WordPress
 if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/wp/');
 }
-require_once ABSPATH . 'wp-settings.php';
 
+require_once ABSPATH . 'wp-settings.php';
