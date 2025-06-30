@@ -31,7 +31,7 @@
             "web/app/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
             "web/app/plugins/{$name}/": ["type:wordpress-plugin"],
             "web/app/themes/{$name}/": ["type:wordpress-theme"]
-		}
+        }
     },
     "scripts": {
         "post-autoload-dump": [
@@ -42,7 +42,7 @@
         ],
         "setup": [
             "@generate-env",
-			"@generate-config",
+            "@generate-config",
             "@generate-permissions",
             "@generate-salts",
             "@docker-setup"
@@ -50,9 +50,9 @@
         "generate-env": [
             "./scripts/generate-env.sh"
         ],
-		"generate-config": [
-			"./scripts/generate-wp-config.sh"
-		],
+        "generate-config": [
+            "./scripts/generate-wp-config.sh"
+        ],
         "generate-permissions": [
             "./scripts/generate-permissions.sh"
         ],
@@ -80,10 +80,10 @@
         "wp": [
             "docker-compose exec web wp"
         ],
-		"wp-install": [
-			"docker-compose up -d",
-			"docker-compose exec web php scripts/wp-install.php"
-		],
+        "wp-install": [
+            "docker-compose up -d",
+            "docker-compose exec web php scripts/wp-install.php"
+        ],
         "check-versions": [
             "./scripts/check-versions.sh"
         ]
