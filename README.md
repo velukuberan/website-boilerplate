@@ -1,13 +1,12 @@
-# WordPress Bedrock Docker Boilerplate v4
+# WordPress Docker Boilerplate v4
 
-A modern WordPress development environment using **Bedrock**, **Docker**, **WordPress 6.5**, **PHP 8.2**, and **MariaDB 11.4** with automated setup.
+A modern WordPress development environment using **Docker**, **WordPress 6.5**, **PHP 8.2**, and **MariaDB 11.4** with automated setup.
 
 ## Features
 
 - 🚀 **WordPress 6.5** - Latest WordPress with enhanced security
 - ⚡ **PHP 8.2** - Modern PHP with improved performance
 - 🗄️ **MariaDB 11.4** - High-performance MySQL alternative
-- 🏗️ **Bedrock** - Modern WordPress boilerplate with Composer
 - 🐳 **Docker** - Containerized development environment
 - 🔧 **Auto-setup** - Everything configured with `composer install`
 - 📦 **Composer Scripts** - Convenient commands for common tasks
@@ -24,12 +23,13 @@ git clone https://github.com/your-username/wordpress-boilerplate.git my-project
 cd my-project
 composer install
 composer setup
-composer docker-build
+composer docker-up
 ```
 
 That's it! The setup script will automatically:
 - ✅ Install WordPress 6.5 and all dependencies
 - ✅ Copy `.env.example` to `.env`
+- ✅ Generate wp-config based on the .env
 - ✅ Generate WordPress security salts
 - ✅ Create necessary directories
 - ✅ Set proper permissions
@@ -88,30 +88,31 @@ composer docker-build
 
 ```
 wordpress-boilerplate/
-├── web/                      # WordPress web root
+├── web/                     # WordPress web root
 │   ├── app/                 # WordPress content directory
 │   │   ├── plugins/         # Plugins
 │   │   ├── themes/          # Themes
 │   │   ├── mu-plugins/      # Must-use plugins
 │   │   └── uploads/         # Media uploads
 │   ├── wp/                  # WordPress core (auto-managed)
-│   └── index.php           # WordPress bootstrap
+│   ├── index.php            # WordPress core (auto-managed)
+│   └── wp-config.php        # WordPress bootstrap
 ├── docker/                  # Docker configuration
-│   ├── web/                # Web server container config
-│   ├── nginx/              # Nginx configuration
-│   ├── php/                # PHP configuration
-│   ├── mariadb/            # MariaDB configuration
-│   └── supervisor/         # Process management
-├── scripts/                # Setup automation scripts
-│   ├── generate-salts.php  # WordPress salts generator
-│   ├── docker-setup.php    # Environment setup
-│   └── check-versions.php  # Version checker
-├── logs/                   # Application logs
-├── .env.example           # Environment template
-├── .env                   # Your environment (auto-created)
-├── composer.json          # Dependencies & scripts
-├── docker-compose.yml     # Docker services definition
-└── README.md              # This file
+│   ├── web/                 # Web server container config
+│   ├── nginx/               # Nginx configuration
+│   ├── php/                 # PHP configuration
+│   ├── mariadb/             # MariaDB configuration
+│   └── supervisor/          # Process management
+├── scripts/                 # Setup automation scripts
+│   ├── generate-salts.php   # WordPress salts generator
+│   ├── docker-setup.php     # Environment setup
+│   └── check-versions.php   # Version checker
+├── logs/                    # Application logs
+├── .env.example             # Environment template
+├── .env                     # Your environment (auto-created)
+├── composer.json            # Dependencies & scripts
+├── docker-compose.yml       # Docker services definition
+└── README.md                # This file
 ```
 
 ## Environment Configuration
@@ -128,7 +129,7 @@ PORT=8080
 DB_NAME=wordpress
 DB_USER=wordpress
 DB_PASSWORD=wordpress
-DB_HOST=mariadb
+DB_HOST=mariad
 
 # WordPress Configuration
 WP_ENV=development
