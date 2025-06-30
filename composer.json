@@ -11,9 +11,7 @@
     ],
     "require": {
         "php": ">=8.2",
-        "roots/bedrock": "^1.26",
         "johnpbloch/wordpress": "~6.5.0",
-        "roots/wp-password-bcrypt": "^1.0",
         "wpackagist-plugin/akismet": "^5.0",
         "wpackagist-theme/twentytwentyfour": "^1.0"
     },
@@ -28,12 +26,12 @@
         }
     ],
     "extra": {
+        "wordpress-install-dir": "web/wp",
         "installer-paths": {
             "web/app/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
             "web/app/plugins/{$name}/": ["type:wordpress-plugin"],
             "web/app/themes/{$name}/": ["type:wordpress-theme"]
-        },
-        "wordpress-install-dir": "web/wp"
+		}
     },
     "scripts": {
         "post-autoload-dump": [
@@ -43,16 +41,20 @@
             "php ./scripts/make-executable.php"
         ],
         "setup": [
-            "@setup-env",
-            "@setup-permissions",
+            "@generate-env",
+			"@generate-config",
+            "@generate-permissions",
             "@generate-salts",
             "@docker-setup"
         ],
-        "setup-env": [
-            "./scripts/setup-env.sh"
+        "generate-env": [
+            "./scripts/generate-env.sh"
         ],
-        "setup-permissions": [
-            "./scripts/setup-permissions.sh"
+		"generate-config": [
+			"./scripts/generate-wp-config.sh"
+		],
+        "generate-permissions": [
+            "./scripts/generate-permissions.sh"
         ],
         "generate-salts": [
             "./scripts/generate-salts.sh"
@@ -91,7 +93,8 @@
         "preferred-install": "dist",
         "allow-plugins": {
             "composer/installers": true,
-            "roots/wordpress-core-installer": true
+            "roots/wordpress-core-installer": true,
+            "johnpbloch/wordpress-core-installer": true
         }
     }
 }
