@@ -65,6 +65,10 @@ RUN mkdir -p /var/log/supervisor \
 # Set working directory
 WORKDIR /var/www/html
 
+# Copy entry point
+COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Copy configuration files
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -78,5 +82,5 @@ RUN chown -R www-data:www-data /var/www/html \
 # Expose port
 EXPOSE 80
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Start entrypoint script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
